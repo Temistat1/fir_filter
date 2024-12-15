@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-module fir_core_core_fsm (
+module tt_um_fir_core_core_fsm  (
   clk, rst, fsm_output, Shift_Accum_Loop_C_0_tr0
 );
   input clk;
