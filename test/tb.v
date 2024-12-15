@@ -1,49 +1,55 @@
-`default_nettype none
 `timescale 1ns / 1ps
 
-/* This testbench just instantiates the module and makes some convenient wires
-   that can be driven / tested by the cocotb test.py.
-*/
-module tb ();
+module tb_fir_core();
 
-  // Dump the signals to a VCD file. You can view it with gtkwave.
+  reg clk;
+  reg rst;
+  reg [31:0] x_rsc_dat;
+  wire [31:0] y_rsc_dat;
+  wire y_triosy_lz;
+  wire x_triosy_lz;
+
+  // Instantiate the design under test (DUT)
+  fir_core DUT (
+    .clk(clk),
+    .rst(rst),
+    .y_rsc_dat(y_rsc_dat),
+    .y_triosy_lz(y_triosy_lz),
+    .x_rsc_dat(x_rsc_dat),
+    .x_triosy_lz(x_triosy_lz)
+  );
+
+  // Clock generation
   initial begin
-    $dumpfile("tb.vcd");
-    $dumpvars(0, tb);
-    #1;
+    clk = 0;
+    forever #5 clk = ~clk; // 10ns clock period
   end
 
-  // Wire up the inputs and outputs:
-  reg clk;
-  reg rst_n;
-  reg ena;
-  reg [7:0] ui_in;
-  reg [7:0] uio_in;
-  wire [7:0] uo_out;
-  wire [7:0] uio_out;
-  wire [7:0] uio_oe;
-`ifdef GL_TEST
-  wire VPWR = 1'b1;
-  wire VGND = 1'b0;
-`endif
+  // Testbench logic
+  initial begin
+    // Initialize signals
+    rst = 1;
+    x_rsc_dat = 32'd0;
 
-  // Replace tt_um_example with your module name:
-  tt_um_example user_project (
+    // Apply reset
+    #10 rst = 0;
 
-      // Include power ports for the Gate Level test:
-`ifdef GL_TEST
-      .VPWR(VPWR),
-      .VGND(VGND),
-`endif
+    // Apply input values and observe output
+    #10 x_rsc_dat = 32'd10; // First input
+    #10 x_rsc_dat = 32'd20; // Second input
+    #10 x_rsc_dat = 32'd30; // Third input
+    #10 x_rsc_dat = 32'd40; // Fourth input
 
-      .ui_in  (ui_in),    // Dedicated inputs
-      .uo_out (uo_out),   // Dedicated outputs
-      .uio_in (uio_in),   // IOs: Input path
-      .uio_out(uio_out),  // IOs: Output path
-      .uio_oe (uio_oe),   // IOs: Enable path (active high: 0=input, 1=output)
-      .ena    (ena),      // enable - goes high when design is selected
-      .clk    (clk),      // clock
-      .rst_n  (rst_n)     // not reset
-  );
+    // Wait for more cycles to observe behavior
+    #100;
+
+    // End simulation
+    $stop;
+  end
+
+  // Monitor output
+  initial begin
+    $monitor("At time %0t: x_rsc_dat = %d, y_rsc_dat = %d", $time, x_rsc_dat, y_rsc_dat);
+  end
 
 endmodule
