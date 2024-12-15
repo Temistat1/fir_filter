@@ -1,41 +1,56 @@
 # Tiny Tapeout project information
 project:
-  title:        "Fir Filter"      # Project title
-  author:       "Aaquil Kasham"      # Your name
-  discord:      ""      # Your discord username, for communication and automatically assigning you a Tapeout role (optional)
-  description:  "FIR FILTER"      # One line description of what your project does
-  language:     "Verilog" # other examples include SystemVerilog, Amaranth, VHDL, etc
-  clock_hz:     0       # Clock frequency in Hz (or 0 if not applicable)
+  title: "FIR_Filter2" # Project title
+  author: "Aaquil Kasham and Temiloluwa Omomuwasan" # Your name
+  discord: "" # Your discord username, for communication and automatically assigning you a Tapeout role (optional)
+  description: "FIR Filter" # One line description of what your project does
+  language: "Verilog" # other examples include SystemVerilog, Amaranth, VHDL, etc
+  clock_hz: 10000000 # Clock frequency in Hz (or 0 if not applicable)
 
   # How many tiles your design occupies? A single tile is about 167x108 uM.
-  tiles: "1x1"          # Valid values: 1x1, 1x2, 2x2, 3x2, 4x2, 6x2 or 8x2
+  tiles: "4x2" # Valid values: 1x1, 1x2, 2x2, 3x2, 4x2, 6x2 or 8x2
 
   # Your top module name must start with "tt_um_". Make it unique by including your github username:
-  top_module:  "tt_um_fir_core_core_fsm "
+  top_module: "tt_um_fir_filter2"
 
   # List your project's source files here.
   # Source files must be in ./src and you must list each source file separately, one per line.
   # Don't forget to also update `PROJECT_SOURCES` in test/Makefile.
   source_files:
     - "project.v"
+    - "fir.v"
 
 # The pinout of your project. Leave unused pins blank. DO NOT delete or add any pins.
 pinout:
-  # Dedicated input ports
-  ui_in: io_0
-  uio_in: io_1
-  
-  # Dedicated output ports
-  uo_out: io_2
-  uio_out: io_3
-  
-  # IO enable path (active high: 0=input, 1=output)
-  uio_oe: io_4
-  
-  # Control signals
-  ena: io_5  # Enable signal
-  clk: io_6  # Clock signal
-  rst_n: io_7  # Active low reset
+  # Inputs
+  ui[0]: "fir_input[0]"
+  ui[1]: "fir_input[1]"
+  ui[2]: "fir_input[2]"
+  ui[3]: "fir_input[3]"
+  ui[4]: "fir_input[4]"
+  ui[5]: "fir_input[5]"
+  ui[6]: "fir_input[6]"
+  ui[7]: "fir_input[7]"
+
+  # Outputs
+  uo[0]: "fir_output[0]"
+  uo[1]: "fir_output[1]"
+  uo[2]: "fir_output[2]"
+  uo[3]: "fir_output[3]"
+  uo[4]: "fir_output[4]"
+  uo[5]: "fir_output[5]"
+  uo[6]: "fir_output[6]"
+  uo[7]: "fir_output[7]"
+
+  # Bidirectional pins
+  uio[0]: "fir_output[8]"
+  uio[1]: "fir_output[9]"
+  uio[2]: "fir_output[10]"
+  uio[3]: "fir_output[11]"
+  uio[4]: "fir_output[12]"
+  uio[5]: "fir_output[13]"
+  uio[6]: "fir_output[14]"
+  uio[7]: "fir_output[15]"
 
 # Do not change!
 yaml_version: 6
