@@ -1,81 +1,61 @@
+# SPDX-FileCopyrightText: © 2024 Tiny Tapeout
+# SPDX-License-Identifier: Apache-2.0
+
 import cocotb
 from cocotb.clock import Clock
-from cocotb.triggers import RisingEdge
+from cocotb.triggers import ClockCycles
+
 
 @cocotb.test()
-async def test_fir_filter(dut):
-    """Test the FIR filter."""
+async def test_project(dut):
+    dut._log.info("Start")
 
-    # Generate clock
-    clock = Clock(dut.clk, 10, units="ns")  # 10 ns clock period
+    # Set the clock period to 100ps us (10 MHz)
+    clock = Clock(dut.clk, 10, units="ms")
     cocotb.start_soon(clock.start())
 
-    # Initialize input signals
-    dut.rst_n.value = 0
-    dut.ena.value = 0
+    # Reset
+    dut._log.info("Reset")
+    dut.ena.value = 1
     dut.ui_in.value = 0
     dut.uio_in.value = 0
-
-    # Apply reset
-    await RisingEdge(dut.clk)
+    dut.rst_n.value = 0
+    await ClockCycles(dut.clk, 10)
     dut.rst_n.value = 1
 
-    # Wait for a few clock cycles
-    for _ in range(5):
-        await RisingEdge(dut.clk)
+    dut._log.info("Test project behavior")
 
-    # Test sequence: Apply enable signal and varying inputs
-    dut.ena.value = 1
+    # # Set the input values you want to test
+    # dut.ui_in.value = 20
+    # dut.uio_in.value = 30
 
-    # Test case 1: Basic functionality
-    test_inputs = [10, 20, 30, 40, 50, 60, 70, 80]  # Example input values
-    expected_outputs = [0] * len(test_inputs)  # Replace with actual expected outputs
+    # # Wait for one clock cycle to see the output values
+    # await ClockCycles(dut.clk, 1)
 
-    for i, test_input in enumerate(test_inputs):
-        dut.ui_in.value = test_input
+    # # The following assersion is just an example of how to check the output values.
+    # # Change it to match the actual expected output of your module:
+    # assert dut.uo_out.value == 50
 
-        await RisingEdge(dut.clk)
+    shift = [0]*13
+    for i in range(255):
+        dut.ui_in.value = i
+        #await ClockCycles(dut.clk, 21)
+        output = ((dut.uo_out.value << 8) | dut.uio_out.value)
+        #await ClockCycles(dut.clk, 10)
+        value = fir(shift, i)
+        print(f"fir_python(shift,{i}): {value}, fir_verilog{i}: {output}" )
+        #assert (output == value)
 
-        # Capture output after the clock edge
-        output = dut.uo_out.value
-        uio_output = dut.uio_out.value
+    # Keep testing the module by changing the input values, waiting for
+    # one or more clock cycles, and asserting the expected output values.
 
-        # Optional: Print debug information
-        dut._log.info(f"Cycle {i}: Input={test_input}, Output={int(output)}, UIO Output={int(uio_output)}")
-
-        # Add your output validation logic here
-        assert int(output) == expected_outputs[i], f"Test failed at cycle {i}: Expected {expected_outputs[i]}, got {int(output)}"
-
-    dut._log.info("Test case 1 completed successfully!")
-
-    # Test case 2: Edge case with zeros
-    test_inputs = [0, 0, 0, 0, 0, 0, 0, 0]
-    expected_outputs = [0] * len(test_inputs)
-
-    for i, test_input in enumerate(test_inputs):
-        dut.ui_in.value = test_input
-
-        await RisingEdge(dut.clk)
-
-        output = dut.uo_out.value
-        dut._log.info(f"Edge Test {i}: Input={test_input}, Output={int(output)}")
-        assert int(output) == expected_outputs[i], f"Edge Test failed at cycle {i}: Expected {expected_outputs[i]}, got {int(output)}"
-
-    dut._log.info("Test case 2 completed successfully!")
-
-    # Test case 3: Maximum value inputs
-    test_inputs = [255, 255, 255, 255, 255, 255, 255, 255]
-    expected_outputs = [255] * len(test_inputs)  # Adjust based on FIR behavior
-
-    for i, test_input in enumerate(test_inputs):
-        dut.ui_in.value = test_input
-
-        await RisingEdge(dut.clk)
-
-        output = dut.uo_out.value
-        dut._log.info(f"Max Test {i}: Input={test_input}, Output={int(output)}")
-        assert int(output) == expected_outputs[i], f"Max Test failed at cycle {i}: Expected {expected_outputs[i]}, got {int(output)}"
-
-    dut._log.info("Test case 3 completed successfully!")
-
-    dut._log.info("All test cases completed successfully!")
+def fir(shift, x):
+    coef = [1, 0, 10, 0, 20, 0, 50, 0, 20, 0, 10, 0, 1]
+    y = 0
+    for i in range(len(coef)-1, -1, -1):
+        if i == 0:
+            shift[i] = x
+        else:
+            shift[i] = shift[i-1]
+        y += shift[i]*coef[i]
+    return y
