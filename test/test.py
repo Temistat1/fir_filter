@@ -1,39 +1,81 @@
-# SPDX-FileCopyrightText: © 2024 Tiny Tapeout
-# SPDX-License-Identifier: Apache-2.0
+import cocotb
+from cocotb.clock import Clock
+from cocotb.triggers import RisingEdge
 
-import os
-import subprocess
+@cocotb.test()
+async def test_fir_filter(dut):
+    """Test the FIR filter."""
 
-# Paths for Verilog files and output
-rtl_file = "project.v"
-tb_file = "tb.v"
-output_file = "simulation_output.vcd"
+    # Generate clock
+    clock = Clock(dut.clk, 10, units="ns")  # 10 ns clock period
+    cocotb.start_soon(clock.start())
 
-def run_simulation():
-    try:
-        # Compile the Verilog files using Icarus Verilog
-        compile_cmd = f"iverilog -o fir_core_tb {rtl_file} {tb_file}"
-        subprocess.run(compile_cmd, shell=True, check=True)
+    # Initialize input signals
+    dut.rst_n.value = 0
+    dut.ena.value = 0
+    dut.ui_in.value = 0
+    dut.uio_in.value = 0
 
-        # Run the simulation and generate the VCD file
-        run_cmd = f"vvp fir_core_tb"
-        subprocess.run(run_cmd, shell=True, check=True)
+    # Apply reset
+    await RisingEdge(dut.clk)
+    dut.rst_n.value = 1
 
-        print(f"Simulation completed. Check {output_file} for waveform.")
-    except subprocess.CalledProcessError as e:
-        print(f"Error during simulation: {e}")
+    # Wait for a few clock cycles
+    for _ in range(5):
+        await RisingEdge(dut.clk)
 
-def main():
-    if not os.path.exists(rtl_file):
-        print(f"Error: {rtl_file} not found!")
-        return
+    # Test sequence: Apply enable signal and varying inputs
+    dut.ena.value = 1
 
-    if not os.path.exists(tb_file):
-        print(f"Error: {tb_file} not found!")
-        return
+    # Test case 1: Basic functionality
+    test_inputs = [10, 20, 30, 40, 50, 60, 70, 80]  # Example input values
+    expected_outputs = [0] * len(test_inputs)  # Replace with actual expected outputs
 
-    run_simulation()
+    for i, test_input in enumerate(test_inputs):
+        dut.ui_in.value = test_input
 
-if __name__ == "__main__":
-    main()
+        await RisingEdge(dut.clk)
 
+        # Capture output after the clock edge
+        output = dut.uo_out.value
+        uio_output = dut.uio_out.value
+
+        # Optional: Print debug information
+        dut._log.info(f"Cycle {i}: Input={test_input}, Output={int(output)}, UIO Output={int(uio_output)}")
+
+        # Add your output validation logic here
+        assert int(output) == expected_outputs[i], f"Test failed at cycle {i}: Expected {expected_outputs[i]}, got {int(output)}"
+
+    dut._log.info("Test case 1 completed successfully!")
+
+    # Test case 2: Edge case with zeros
+    test_inputs = [0, 0, 0, 0, 0, 0, 0, 0]
+    expected_outputs = [0] * len(test_inputs)
+
+    for i, test_input in enumerate(test_inputs):
+        dut.ui_in.value = test_input
+
+        await RisingEdge(dut.clk)
+
+        output = dut.uo_out.value
+        dut._log.info(f"Edge Test {i}: Input={test_input}, Output={int(output)}")
+        assert int(output) == expected_outputs[i], f"Edge Test failed at cycle {i}: Expected {expected_outputs[i]}, got {int(output)}"
+
+    dut._log.info("Test case 2 completed successfully!")
+
+    # Test case 3: Maximum value inputs
+    test_inputs = [255, 255, 255, 255, 255, 255, 255, 255]
+    expected_outputs = [255] * len(test_inputs)  # Adjust based on FIR behavior
+
+    for i, test_input in enumerate(test_inputs):
+        dut.ui_in.value = test_input
+
+        await RisingEdge(dut.clk)
+
+        output = dut.uo_out.value
+        dut._log.info(f"Max Test {i}: Input={test_input}, Output={int(output)}")
+        assert int(output) == expected_outputs[i], f"Max Test failed at cycle {i}: Expected {expected_outputs[i]}, got {int(output)}"
+
+    dut._log.info("Test case 3 completed successfully!")
+
+    dut._log.info("All test cases completed successfully!")
